@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         # Background
         self.setStyleSheet(
             "QMainWindow { "
-                "background-image: url(icons/Tab1_beta.png); "
+                "background-image: url(icons/Computer. Tab1_beta.png); "
                 "background-position: center; "
                 "}"
         )
