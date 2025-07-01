@@ -1,5 +1,8 @@
 import requests
 import base64
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 """Класс для работы с API"""
@@ -8,6 +11,18 @@ class APIClient:
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         self.timeout = 500
+        self.session.trust_env = False 
+        self.session.mount('http://', HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
+
+        # Настройка повторных попыток и таймаутов
+        retry = Retry(
+            total=3,
+            backoff_factor=0.1,
+            status_forcelist=[500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
     
     def detect_image(self, image_path):
         """Отправка изображения на удаленный сервер для обработки"""
@@ -18,7 +33,7 @@ class APIClient:
                 response = self.session.post(
                     api_url,
                     files={'file': f},
-                    timeout=self.timeout
+                    timeout=(30, self.timeout)
                 )
             
             response.raise_for_status()

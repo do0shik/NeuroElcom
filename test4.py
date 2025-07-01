@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         # Background
         self.setStyleSheet(
             "QMainWindow { "
-                "background-image: url(icons/Computer. Tab1_beta.png); "
+                "background-image: url(icons/Tab1_beta.png); "
                 "background-position: center; "
                 "}"
         )
@@ -231,12 +231,12 @@ class MainWindow(QMainWindow):
         print("Запуск создания PDF...")
         try:
             # Регистрация шрифта Manrope
-            pdfmetrics.registerFont(TTFont('Manrope', './font/Manrope-VariableFont_wght.ttf'))
-            pdfmetrics.registerFont(TTFont('Manrope-Bold', './font/Manrope-SemiBold.ttf'))
+            pdfmetrics.registerFont(TTFont('Manrope', '/font/Manrope-VariableFont_wght.ttf'))
+            pdfmetrics.registerFont(TTFont('Manrope-Bold', '/font/Manrope-SemiBold.ttf'))
 
-            # Резервный шрифт на случай проблем с Manrope
-            pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-            pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+            # # Резервный шрифт на случай проблем с Manrope
+            # pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+            # pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
 
             pdf_path = os.path.join(tempfile.gettempdir(), "result.pdf")
             doc = SimpleDocTemplate(pdf_path, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
@@ -776,14 +776,14 @@ class MainWindow(QMainWindow):
                                 all_items.append(item)
 
             # Сортируем элементы по ID
-            all_items_sorted = sorted(all_items, key=lambda x: x.get('id', '')) if all_items else []
+            #all_items_sorted = sorted(all_items, key=lambda x: x.get('name', '')) if all_items else []
 
             # Создаем комбобоксы
             for key, w in zip(['id', 'name', 'price'], combo_widths):
                 cb = QComboBox(row)
                 cb.addItem("", None)  # Пустой элемент
-                if all_items_sorted:
-                    for itm in all_items_sorted:
+                if all_items:
+                    for itm in all_items:
                         val = itm.get(key, 'N/A')
                         txt = f"{val}" + (" руб." if key == 'price' else "")
                         cb.addItem(txt, itm)
@@ -911,7 +911,7 @@ class MainWindow(QMainWindow):
 
             # Существующие группы
             for grp in groups:
-                grp_sorted = sorted(grp, key=lambda x: x.get('id', ''))
+                #grp_sorted = sorted(grp, key=lambda x: x.get('name', ''))
                 row = QWidget(content)
                 row_layout = QHBoxLayout(row)
                 row_layout.setContentsMargins(1, 10, 10, 10)  # Лево, Верх, Право, Низ
@@ -920,7 +920,7 @@ class MainWindow(QMainWindow):
 
                 for key, w in zip(['id', 'name', 'price'], widths):
                     cb = QComboBox(row)
-                    for itm in grp_sorted:
+                    for itm in grp:
                         val = itm.get(key, 'N/A')
                         txt = f"{val}" + (" руб." if key == 'price' else "")
                         cb.addItem(txt, itm)
@@ -929,7 +929,7 @@ class MainWindow(QMainWindow):
                     # cb.setFont(category_font)
                     combos.append(cb)
                     row_layout.addWidget(cb)
-                    if grp_sorted:  # Устанавливаем первый элемент по умолчанию
+                    if grp:  # Устанавливаем первый элемент по умолчанию
                         cb.setCurrentIndex(0)
                 cont_v.addWidget(row)
 
