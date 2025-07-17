@@ -13,7 +13,7 @@ class ComboBoxWindow(QMainWindow):
 
         # Загрузка шрифта Manrope
         font_db = QFontDatabase()
-        font_id = font_db.addApplicationFont("C:/Users/a.avdashkova/PycharmProjects/AI_application/font/Manrope-VariableFont_wght.ttf")
+        font_id = font_db.addApplicationFont("./font/Manrope-VariableFont_wght.ttf")
         if font_id < 0:
             print("Ошибка загрузки шрифта Manrope")
         else:
@@ -271,7 +271,7 @@ class ComboBoxWindow(QMainWindow):
 if __name__ == '__main__':
     try:
         app = QApplication(sys.argv)
-        window = ComboBoxWindow("C:/Users/a.avdashkova/PycharmProjects/AI_application/example/test666.json")
+        window = ComboBoxWindow("./example/test666.json")
         window.show()
         sys.exit(app.exec_())
     except Exception as e:

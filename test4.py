@@ -19,7 +19,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 import tempfile
-
+from APIClient import APIClient
+from datetime import datetime
 # Global for current image path
 CURRENT_IMG_PATH = ""
 
@@ -230,12 +231,12 @@ class MainWindow(QMainWindow):
         print("Запуск создания PDF...")
         try:
             # Регистрация шрифта Manrope
-            pdfmetrics.registerFont(TTFont('Manrope', 'font/Manrope-VariableFont_wght.ttf'))
-            pdfmetrics.registerFont(TTFont('Manrope-Bold', 'font/Manrope-SemiBold.ttf'))
+            pdfmetrics.registerFont(TTFont('Manrope', '/font/Manrope-VariableFont_wght.ttf'))
+            pdfmetrics.registerFont(TTFont('Manrope-Bold', '/font/Manrope-SemiBold.ttf'))
 
-            # Резервный шрифт на случай проблем с Manrope
-            pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-            pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+            # # Резервный шрифт на случай проблем с Manrope
+            # pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+            # pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
 
             pdf_path = os.path.join(tempfile.gettempdir(), "result.pdf")
             doc = SimpleDocTemplate(pdf_path, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
@@ -505,7 +506,26 @@ class MainWindow(QMainWindow):
                 print(f"  Наименование: {item.get('name', '')}")
                 print(f"  Цена: {item.get('price', '')}")
 
-
+    def save_detection_image(self, image_bytes):
+        """
+        save_detection_image 
+            Функция для создания временного файла из 
+            полученного изображения
+        Parameters
+        image_bytes : base64
+            Полученное изображение
+        Returns 
+        temp_image_path
+            Путь до созданного временнного файла
+        """
+        temp_dir = tempfile.gettempdir()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        temp_image_path = os.path.join(temp_dir, f"detection_result_{timestamp}.jpg")
+    
+        with open(temp_image_path, 'wb') as f:
+            f.write(image_bytes)
+        return temp_image_path
+    
     def select_file(self):
         # Метод для выбора файла
         path, _ = QFileDialog.getOpenFileName(self, "Выберите файл", "", "Images (*.png *.jpg *.jpeg)")
@@ -513,9 +533,26 @@ class MainWindow(QMainWindow):
             self.handle_file_load(path)
 
     def handle_file_load(self, path):
+        """
+        handle_file_load 
+            Функция для работы с API
+            и передачи результатов
+            (немного поменяла)
+        Parameters
+        path : str
+             Принимается путь выбранного файла,
+             Затем изображение удаленно передается на обработку.
+             В результате получается измененное изображение
+             И данные, полученные в результате обработки
+        """
         global CURRENT_IMG_PATH
-        CURRENT_IMG_PATH = path
-        self.show_success(path)
+        global data
+        api = APIClient()
+        image_bytes, detection_results = api.detect_image(path)
+        temp_image_path = self.save_detection_image(image_bytes)
+        CURRENT_IMG_PATH = temp_image_path
+        data = detection_results
+        self.show_success(temp_image_path)
 
     def show_success(self, path):
         w = QWidget(self)
@@ -631,10 +668,10 @@ class MainWindow(QMainWindow):
         cont_v.setSpacing(5)
 
         # Загрузка данных и создание таблицы
-        data = self.load_data('example/test.json')
         switches, transformers, meters = [], [], []
+        loaded_data = self.load_data(data)
         if data:
-            for group in data:
+            for group in loaded_data:
                 if not isinstance(group, list) or not group: continue
                 item = group[0]
                 cid = item.get('id', '')
@@ -739,14 +776,14 @@ class MainWindow(QMainWindow):
                                 all_items.append(item)
 
             # Сортируем элементы по ID
-            all_items_sorted = sorted(all_items, key=lambda x: x.get('id', '')) if all_items else []
+            #all_items_sorted = sorted(all_items, key=lambda x: x.get('name', '')) if all_items else []
 
             # Создаем комбобоксы
             for key, w in zip(['id', 'name', 'price'], combo_widths):
                 cb = QComboBox(row)
                 cb.addItem("", None)  # Пустой элемент
-                if all_items_sorted:
-                    for itm in all_items_sorted:
+                if all_items:
+                    for itm in all_items:
                         val = itm.get(key, 'N/A')
                         txt = f"{val}" + (" руб." if key == 'price' else "")
                         cb.addItem(txt, itm)
@@ -874,7 +911,7 @@ class MainWindow(QMainWindow):
 
             # Существующие группы
             for grp in groups:
-                grp_sorted = sorted(grp, key=lambda x: x.get('id', ''))
+                #grp_sorted = sorted(grp, key=lambda x: x.get('name', ''))
                 row = QWidget(content)
                 row_layout = QHBoxLayout(row)
                 row_layout.setContentsMargins(1, 10, 10, 10)  # Лево, Верх, Право, Низ
@@ -883,7 +920,7 @@ class MainWindow(QMainWindow):
 
                 for key, w in zip(['id', 'name', 'price'], widths):
                     cb = QComboBox(row)
-                    for itm in grp_sorted:
+                    for itm in grp:
                         val = itm.get(key, 'N/A')
                         txt = f"{val}" + (" руб." if key == 'price' else "")
                         cb.addItem(txt, itm)
@@ -892,7 +929,7 @@ class MainWindow(QMainWindow):
                     # cb.setFont(category_font)
                     combos.append(cb)
                     row_layout.addWidget(cb)
-                    if grp_sorted:  # Устанавливаем первый элемент по умолчанию
+                    if grp:  # Устанавливаем первый элемент по умолчанию
                         cb.setCurrentIndex(0)
                 cont_v.addWidget(row)
 
@@ -1337,11 +1374,24 @@ class MainWindow(QMainWindow):
             )
             self.fullscreen_img_label.setPixmap(scaled_pix)
 
-    def load_data(self, path):
+    def load_data(self, content):
+        """
+        load_data _summary_
+            Функция, обрабатывающая полученные
+            данные
+        Parameters
+        ----------
+        content : list
+            Исходные громоздкие данные
+        Returns
+        -------
+        flat : list
+            Возвращает обработанный список
+        (убрала открытие json-файла и извлечение
+        из него данных)
+        """
         try:
-            with open(path, 'r', encoding='utf-8') as f:
-                content = json.load(f)
-                print("Содержимое JSON:", content)  # Отладка
+            print("Содержимое :", content)  # Отладка
             if isinstance(content, list):
                 flat = []
                 for cat in content:
@@ -1738,12 +1788,12 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     font_db = QFontDatabase()
 
-    main_font_id = font_db.addApplicationFont("font/Manrope-VariableFont_wght.ttf")
+    main_font_id = font_db.addApplicationFont("./font/Manrope-VariableFont_wght.ttf")
     if main_font_id != -1:
         main_font_family = font_db.applicationFontFamilies(main_font_id)[0]
         app.setFont(QFont(main_font_family, 10))  # Устанавливаем как шрифт по умолчанию
 
-    header_font_id = font_db.addApplicationFont("font/Manrope-SemiBold.ttf")
+    header_font_id = font_db.addApplicationFont("./font/Manrope-SemiBold.ttf")
     if header_font_id != -1:
         header_font_family = font_db.applicationFontFamilies(header_font_id)[0]
     else:
@@ -1751,5 +1801,6 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
 
 
